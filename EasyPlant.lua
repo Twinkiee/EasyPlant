@@ -8,9 +8,34 @@ require "Window"
 -----------------------------------------------------------------------------------------------
 -- EasyPlant Module Definition
 -----------------------------------------------------------------------------------------------
+
+--[[local plants = {
+	[247861] = , --Sprouting Spirovine
+	[247862] = , --Sprouting Bladeleaf
+	[247863] = , --Sprouting Yellowbell
+	[247864] = , --Sprouting Pummelgranate
+	[247865] = , --Sprouting Logicleaf
+	[247866] = , --Sprouting Serpentlily
+	[247867] = , --Sprouting Honeywheat
+	[247868] = , --Sprouting Crowncorn
+	[247869] = , --Sprouting Coralscale
+	[247870] = , --Sprouting Goldleaf
+	[247871] = , --Sprouting Octopod
+	[247872] = , --Sprouting Stoutroot
+	[247877] = , --Sprouting Faerybloom
+	[247878] = , --Sprouting Witherwood
+	[247879] = , --Sprouting Flamefrond
+	[247880] = , --Sprouting Grimgourd
+	[247881] = , --Sprouting Mourningstar
+	[247882] = , --Sprouting Bloodbriar
+	[247883] = , --Sprouting Glowmelon
+	[247884] = , --Sprouting Heartichoke
+
+}]]--
+
 local EasyPlant = {} 
 local eventsActive = false
-
+local addonActive = true
 local fnSortSeedsFirst = function(itemLeft, itemRight)
 	
 	if itemLeft == itemRight then
@@ -95,6 +120,7 @@ function EasyPlant:OnDocLoaded()
 		self.toplant = 0
 		
 		Apollo.RegisterSlashCommand("ep", "OnEp2", self)
+		Apollo.RegisterSlashCommand("easyplant", "OnEp2", self)
 		
 		local bagwindow = self.wndMain:FindChild("MainBagWindow")
 		bagwindow:SetSort(true)
@@ -124,9 +150,15 @@ end
 
 
 function EasyPlant:OnEp2()
-	--Print(tostring(self.eventsActive))
-	Print(self.lastZone)
-	Print(tostring(self.eventsActive))
+	addonActive = not addonActive
+	if (addonActive == true) then
+		Print("Easyplant enabled")
+	else
+		if(self.wndMain:IsVisible()) then
+			self.wndMain:Close()
+		end
+		Print("EasyPlant disabled")
+	end
 end
 
 -----------------------------------------------------------------------------------------------
@@ -171,7 +203,9 @@ end
 
 
 function EasyPlant:OnEp(override)
-	
+	if(addonActive == false) then
+		return
+	end
 	if(self.wndMain:IsVisible() and override==false) then
 		return
 	end
