@@ -43,13 +43,13 @@ end
 
 function EasyPlant:Events(activate)
 	if(activate==true) then
-		--Apollo.RegisterEventHandler("UnitCreated", 	"OnUnitCreated", self)
+		Apollo.RegisterEventHandler("UnitCreated", 	"OnUnitCreated", self)
 		Apollo.RegisterEventHandler("UnitDestroyed","OnUnitDestroyed",self)
 		Apollo.RegisterEventHandler("UpdateInventory","OnUpdateInventory",self)
 		self.eventsActive = true
 	else
 		Apollo.RemoveEventHandler("UpdateInventory",self)
-		--Apollo.RemoveEventHandler("UnitCreated", self)
+		Apollo.RemoveEventHandler("UnitCreated", self)
 		Apollo.RemoveEventHandler("UnitDestroyed", self)
 		self.eventsActive = false
 	end
@@ -58,20 +58,17 @@ function EasyPlant:Events(activate)
 end
 
 function EasyPlant:OnLoad()
-	--Apollo.RegisterEventHandler("SubZoneChanged", "OnSubZoneChanged", self)
+
 	self.watching = {}
 	self.arPreloadUnits = {}
-	Apollo.RegisterEventHandler("UnitCreated","OnPreloadUnitCreated",self)
+
 	
 	Apollo.RegisterEventHandler("SubZoneChanged", "OnSubZoneChanged", self)
 	Apollo.RegisterEventHandler("ChangeWorld", "OnChangeWorld", self)
 	self:Events(true)
 	
 	
-	-- Array to store units encountered pre-load
-	
-		--Apollo.RegisterEventHandler("UnitDestroyed","OnUnitDestroyed",self)
-    -- load our form file
+
 	self.xmlDoc = XmlDoc.CreateFromFile("EasyPlant.xml")
 	self.xmlDoc:RegisterCallback("OnDocLoaded", self)
 end
@@ -96,34 +93,24 @@ function EasyPlant:OnDocLoaded()
 		self.unit=0
 		
 		self.toplant = 0
-		--self.eventsActive = true
 		
-		--self.unitplayer = GameLib.GetPlayerUnit()
-		-- Register handlers for events, slash commands and timer, etc.
-		-- e.g. Apollo.RegisterEventHandler("KeyDown", "OnKeyDown", self)
 		Apollo.RegisterSlashCommand("ep", "OnEp2", self)
 		
 		local bagwindow = self.wndMain:FindChild("MainBagWindow")
 		bagwindow:SetSort(true)
 		bagwindow:SetItemSortComparer(fnSortSeedsFirst)
+		self.blockwindow = self.wndMain:FindChild("BlockMouse")
 		
-		--Apollo.RegisterEventHandler("UnitCreated","OnUnitCreated",self)
-		--Apollo.RegisterEventHandler("UnitDestroyed","OnUnitDestroyed",self)
-		--Apollo.RegisterEventHandler("UpdateInventory","OnUpdateInventory",self)
-		--Apollo.RegisterEventHandler("UpdateInventory","OnUpdateInventory",self)
-		
-		self:CreateUnitsFromPreload()
-		Apollo.RemoveEventHandler("UnitCreated", self)
-		Apollo.RegisterEventHandler("UnitCreated", 	"OnUnitCreated", self)
 		self.timer = ApolloTimer.Create(1.000, true, "OnTimer", self)
-		--local zoneid = GameLib.GetCurrentZoneId()
-		--if (zoneid == 0) then
-		--	 ApolloTimer.Create(3.000, false, "OnLoginZoneCheck", self)
-		--else
-		--	self:OnSubZoneChanged(GameLib.GetCurrentZoneId())
-		--end
+		self.BlockTimer = ApolloTimer.Create(0.3,false,"OnBlockTimer",self) 
+		
 	end
 	
+end
+
+function EasyPlant:OnBlockTimer()
+	self.blockwindow:SetStyle("IgnoreMouse",true)
+
 end
 
 
@@ -134,9 +121,7 @@ function EasyPlant:OnWindowManagementReady()
 	end
 end
 
-function EasyPlant:OnLoginZoneCheck()
-	self:OnSubZoneChanged(GameLib.GetCurrentZoneId())
-end
+
 
 function EasyPlant:OnEp2()
 	--Print(tostring(self.eventsActive))
@@ -228,9 +213,11 @@ end
 
 function EasyPlant:OnMouseButtonDown()
 	--Apollo.GetString(65683) GetTargetUnit
+	--local bagwindow = self.wndMain:FindChild("MainBagWindow")
+	--self.bagwindow:AddStyle("IgnoreMouse",true)
 	
 	local curtarget = GameLib.GetTargetUnit()
-	if(curtarget and curtarget:GetName()==Apollo.GetString(617068)) then
+	if(curtarget and curtarget:GetName()==Apollo.GetString(423296)) then
 		self.toplant = curtarget:GetId()
 	end
 	
@@ -246,7 +233,8 @@ function EasyPlant:OnMouseButtonDown()
 	self.watching[self.toplant]["blocktime"] = GameLib.GetGameTime()
 	GameLib.SetTargetUnit(self.watching[self.toplant]["unit"])
 	self.toplant = 0
-	
+	self.blockwindow:SetStyle("IgnoreMouse",false)
+	self.BlockTimer:Start()
 end
 
 function EasyPlant:OnChangeWorld()
@@ -257,15 +245,16 @@ function EasyPlant:OnChangeWorld()
 end
 
 function EasyPlant:OnSubZoneChanged(idZone,pszZoneName)
+	if(idZone == 0) then
+		return
+	end
 	
 	if (idZone == 1136 and self.lastZone~=1136) then
 		if(self.eventsActive==false) then
 			self:Events(true)
 		end
 		self.timer:Start()
-		--Apollo.RegisterEventHandler("UpdateInventory","OnUpdateInventory",self)
-		--Apollo.RegisterEventHandler("UnitCreated", "OnUnitCreated", self)
-		--Apollo.RegisterEventHandler("UnitDestroyed", "OnUnitDestroyed", self)
+
 	elseif (idZone ~= 1136) then
 	
 		self.watching = {}
@@ -292,14 +281,11 @@ function EasyPlant:OnUpdateInventory()
 	end
 end
 
-function EasyPlant:OnPreloadUnitCreated(unitNew)
-	
-	self.arPreloadUnits[unitNew:GetId()] = unitNew
-end
+
 
 function EasyPlant:OnUnitCreated(unit)
 	--Print("OnUnitCreated") --and 65683 old one
-	if((unit) and (unit:GetName()==Apollo.GetString(617068)) and (unit:GetType()=="Simple")  and (self.watching[unit:GetId()] == nil)) then
+	if((unit) and (unit:GetName()==Apollo.GetString(423296)) and (unit:GetType()=="Simple")  and (self.watching[unit:GetId()] == nil)) then
 		--Print("watching")
 		self.watching[unit:GetId()] = {}
 		self.watching[unit:GetId()]["unit"] = unit
@@ -309,27 +295,14 @@ function EasyPlant:OnUnitCreated(unit)
 end
 
 function EasyPlant:OnUnitDestroyed(unit)
-	--Print("onunitdestroyed") and (unit:GetName()==Apollo.GetString(617068)) kinda not needed
+
 	if((unit) and (self.watching[unit:GetId()])) then
-		--Print("Destroying")
+
 		self.watching[unit:GetId()] = nil
-		--self.toplant = 0
-		--self.wndMain:Close()
-		--self:OnEp(true)
-		--self:OnTimer()
+
 		
 	end
 
-end
-
-
-
-function EasyPlant:CreateUnitsFromPreload()
-	for idUnit, unitNew in pairs(self.arPreloadUnits) do
-	--Print("ar")
-		self:OnUnitCreated(unitNew)
-	end
-	--self.arPreloadUnits = nil
 end
 
 
@@ -405,8 +378,19 @@ function EasyPlant:OnGenerateTooltip(wndControl, wndHandler, tType, item)
 	end
 end
 
+function EasyPlant:TempClose( wndHandler, wndControl, eMouseButton, nLastRelativeMouseX, nLastRelativeMouseY, bDoubleClick, bStopPropagation )
+	self.timer:Stop()
+	self:Events(false)
+	self.lastZone = 0
+	self.wndMain:Close()
+end
+
+function EasyPlant:OnMouseBlockDown( wndHandler, wndControl, eMouseButton, nLastRelativeMouseX, nLastRelativeMouseY, bDoubleClick, bStopPropagation )
+	--Print("todo")
+end
+
 -----------------------------------------------------------------------------------------------
 -- EasyPlant Instance
 -----------------------------------------------------------------------------------------------
-EasyPlantInst = EasyPlant:new()
+local EasyPlantInst = EasyPlant:new()
 EasyPlantInst:Init()
